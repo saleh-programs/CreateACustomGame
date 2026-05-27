@@ -1,0 +1,5 @@
+#startButton{
+    &:hover{
+        filter: invert();
+    }
+}
