@@ -129,6 +129,7 @@ function Creating() {
 const [loader,setLoader] = useState(".");
 const [gaveName, setGaveName] = useState(false);
 const [studentName, setStudentName] = useState("");
+const [gameURL, setGameURL] = useState(null);
  
   useEffect(() => {
     if (!ready) return;
@@ -136,13 +137,13 @@ const [studentName, setStudentName] = useState("");
       setStopwatch(prev => {
         if (prev - 1000 <= 0){
           const currentName = allAssets[currentAssetRef.current].name;
-          getCanvasSnapshot().then((b) => {
+          const p = getCanvasSnapshot().then((b) => {
             storedAssets.current[currentName].push(b);
           })
           
           if (currentAssetRef.current >= allAssets.length - 1){
             clearInterval(storeIntervalRef.current);
-            setGeneratingGame(true);
+            p.then(() => generateMyGame())
             return 0;
           }else{
             setCurrentAsset(prev => prev + 1);
@@ -201,14 +202,14 @@ useEffect(() => {
     if (stopwatch < 2000) return;
 
     const currentName = allAssets[currentAssetRef.current].name;
-    getCanvasSnapshot().then((b) => {
+    const p = getCanvasSnapshot().then((b) => {
       storedAssets.current[currentName].push(b);
     })
     
     if (currentAssetRef.current >= allAssets.length - 1){
       clearInterval(storeIntervalRef.current);
       setStopwatch(0);
-      setGeneratingGame(true);
+      p.then(() => generateMyGame());
     }else{
       setCurrentAsset(prev => prev + 1);
       setStopwatch(allAssets[currentAssetRef.current + 1].countdown);
@@ -410,6 +411,39 @@ function getDisplayScale(assetW, assetH) {
   return scale;
 }
 
+async function generateMyGame(){
+  console.log("We are going to generate now!")
+  setGeneratingGame(true);
+  const fd = new FormData();
+  for (const [key, val] of Object.entries(storedAssets.current)){
+    let i = 0;
+    for (const b of val){
+      fd.append(key, b, `${i}.png`)
+      i += 1;
+    }
+  }
+  const base = studentName
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9-]/g, "");
+
+  const routeName = `${base || "student"}-${Date.now()}`;
+  const response = await fetch(`http://localhost:5001/generate/${routeName}`, {
+    method: "POST",
+    body: fd
+  });
+  const data = await response.json();
+  if (!data || !data.success){
+    console.log(data.message || "req failed");
+    setGeneratingGame(false);
+    return null;
+  }
+  console.log(data);
+  setGeneratingGame(false);
+  setGameURL(data.url);
+  console.log(data.url)
+}
+
 // function saveState() {
 //   const canvas = fabricCanvas.current;
 //   if (!canvas || isLoadingState.current) return;
@@ -457,6 +491,24 @@ function getDisplayScale(assetW, assetH) {
 // }
 
 
+  if (gameURL){
+    return (<div style={{ height: "100%", padding: "20px", backgroundColor: "rgba(109, 31, 0, 0.36)", display: "flex", 
+      flexDirection: "column", gap: "10px", justifyContent: "center", alignItems: "center"
+    }}>
+        <section style={{
+          backgroundColor: "white",
+          borderRadius: "5px",
+          padding: "20px 10px",
+          fontSize: "2rem",
+          minHeight: "170px",
+          textAlign: "center"
+        }}>
+          <div style={{textAlign: "center", fontSize: ".8em", opacity: ".5", width: "100%"}}>{studentName},</div>
+          Your game is ready!<br/>
+          <div style={{fontSize: "1.5rem", textAlign: "center"}}>Visit: <br /> <a href={gameURL}>{gameURL}</a></div>
+        </section>
+    </div>)
+  }
   if (generatingGame){
     return (
     <div style={{ height: "100%", padding: "20px", backgroundColor: "rgba(109, 31, 0, 0.36)", display: "flex", 
