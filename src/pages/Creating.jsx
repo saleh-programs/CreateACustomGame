@@ -75,7 +75,7 @@ function Creating() {
       countdown: 60000
       },
     { title: "...a background!",
-      dimensions: [3600,1900],
+      dimensions: [1800,950],
       name: "background",
       countdown: 60000
       },
