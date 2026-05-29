@@ -64,13 +64,16 @@ class Enemy(Generic):
         self.hit_timer = Timer(400)
         self.speed = 50
 
-    # def hit(self):
-    #     if not self.hit_timer.active:
-    #         self.health_bar.reduce(10)
-    #         self.hit_timer.activate()
-    #
-    #     if not self.health_bar.exists:
-    #         self.kill()
+        self.health_bar = HealthBar(self.rect.width,3,self.rect.topleft,self.groups()[0])
+
+
+    def hit(self):
+        if not self.hit_timer.active:
+            self.health_bar.reduce(10)
+            self.hit_timer.activate()
+
+        if not self.health_bar.exists:
+            self.kill()
     def check_collisions(self,type):
         for sprite in self.collision_sprites:
             if sprite.rect.colliderect(self.rect):
@@ -93,6 +96,9 @@ class Enemy(Generic):
         if not [sprite for sprite in self.collision_sprites if (sprite.rect.collidepoint(d[self.direction.x] + vector(0, 10)))]:
             self.direction.x *= -1
             self.orientation = 'right' if self.direction.x == 1 else 'left'
+
+        self.health_bar.move(pos = (self.rect.x,self.rect.y))
+
 
     def animate(self,dt):
         self.frame_index += 10 * dt
@@ -205,11 +211,8 @@ class Player(Generic):
         if self.status == 'run':
             self.frame_index += RUN_ANIMATION * dt
         elif self.status == 'attack':
-            self.frame_index += 30 * dt
-            if int(self.frame_index) == 1:
-                self.attack_rect = pygame.Rect(self.hitbox.right - self.way,self.hitbox.top,110,64)
-            else:
-                self.attack_rect = None
+            self.frame_index += 10 * dt
+            self.attack_rect = pygame.Rect(self.hitbox.right - self.way,self.hitbox.top,110,64)
         elif self.jump_timer.active:
             self.frame_index += JUMP_ANIMATION * dt
         else:
@@ -217,6 +220,7 @@ class Player(Generic):
         if self.frame_index >= len(current_animation)-0.5:
             self.frame_index = 0
             self.attack = False
+            self.attack_rect = None
 
         self.image = current_animation[int(self.frame_index)]
         if self.orientation == "left":
@@ -230,11 +234,10 @@ class Player(Generic):
             self.image = surf
 
     # called in level
-    # def damage(self,health):
-    #     if not self.hit_timer.active:
-    #         self.hit_timer.activate()
-    #         self.direction.y -= 1.5
-    #         health.reduce()
+    def damage(self):
+        if not self.hit_timer.active:
+            self.hit_timer.activate()
+            self.direction.y -= 1.5
     # called in move
     def collision(self,direction):
         for sprite in self.collision_sprites:
@@ -264,3 +267,31 @@ class Player(Generic):
 
         self.get_status()
         self.animate(dt)
+
+
+#Enemy Health
+class HealthBar(pygame.sprite.Sprite):
+    def __init__(self,w,h,pos,group,z = 0):
+        super().__init__(group)
+        self.image = pygame.Surface((w,h))
+        #self.image.fill('black')
+        self.rect = self.image.get_rect(midleft = pos)
+        self.z = z
+        self.w = w
+        self.h = h
+        self.pos = pos
+        self.exists = True
+    def move(self,pos,centered = False):
+        self.rect.left = pos[0]
+        self.rect.top = pos[1]
+        if centered:
+            self.rect = self.image.get_rect(center=pos)
+        self.pos = pos
+    def reduce(self,amount):
+        self.w -= amount
+        if self.w > 0:
+            self.image = pygame.Surface((self.w, self.h))
+            self.rect = self.image.get_rect(midleft = self.pos)
+        else:
+            self.exists = False
+            self.kill()

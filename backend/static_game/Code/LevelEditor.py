@@ -88,6 +88,7 @@ class Editor:
         for key,value in EDITOR_DATA.items():
             if value['graphics']:
                 graphics = import_folder(value['graphics'])
+
                 self.animations[key] = {
                     'frame index': 0,
                     'frames': graphics,
@@ -95,7 +96,9 @@ class Editor:
                 }
 
         #preview
-        self.preview_surfs = {key: load(value['preview']) for key,value in EDITOR_DATA.items() if value['preview']}
+        self.preview_surfs = {key: load(value['preview']).convert_alpha() for key,value in EDITOR_DATA.items() if value['preview']}
+        for val in self.preview_surfs.values():
+            val.set_alpha(50)
 
     def animation_updates(self,dt):
         for value in self.animations.values():
@@ -107,6 +110,7 @@ class Editor:
         for sprite in self.canvas_objects:
             if sprite.rect.collidepoint(mouse_pos()):
                 return sprite
+
 
     # create grid for level
     def create_grid(self):
@@ -178,8 +182,8 @@ class Editor:
             self.menu_click(event)
             self.object_drag(event)
 
-            self.canvas_add()
-            self.canvas_remove()
+        self.canvas_add()
+        self.canvas_remove()
 
     # input
     def pan_input(self, event):
@@ -293,7 +297,6 @@ class Editor:
                 frames = self.animations[tile.coin]['frames']
                 index = int(self.animations[tile.coin]['frame index'])
                 surf = frames[index]
-                surf = pygame.transform.scale_by(surf,0.8)
                 rec = surf.get_rect(center = (pos[0] + (Tile_Size // 2),pos[1] + (Tile_Size // 2)))
                 self.display_surface.blit(surf, rec)
 
@@ -305,24 +308,10 @@ class Editor:
             if tile.enemy:
                 frames = self.animations[tile.enemy]['frames']
                 index = int(self.animations[tile.enemy]['frame index'])
-                if tile.enemy == 11:
-                    surf = frames[index]
-                    rec = surf.get_rect(midbottom=(pos[0] + (Tile_Size // 2), pos[1] + Tile_Size))
-                elif tile.enemy == 10:
-                    surf = pygame.transform.scale(frames[index],(32,32))
-                    rec = surf.get_rect(midtop = (pos[0] + (Tile_Size // 2),pos[1]))
-                elif tile.enemy == 9:
-                    surf = frames[index]
-                    rec = surf.get_rect(midbottom =(pos[0] + (Tile_Size // 2), pos[1] + Tile_Size))
-                elif tile.enemy == 8:
-                    surf = pygame.transform.scale(frames[index], (64, 64))
-                    rec = surf.get_rect(midbottom=(pos[0] + (Tile_Size // 2), pos[1] + Tile_Size))
-                else:
-                    surf = pygame.transform.scale(frames[index], (64, 64))
-                    rec = surf.get_rect(midbottom=(pos[0] + (Tile_Size // 2), pos[1] + Tile_Size))
-
-                # pygame.draw.rect(self.display_surface,'red', rec, 1)
+                surf = frames[index]
+                rec = surf.get_rect(midbottom=(pos[0] + (Tile_Size // 2), pos[1] + Tile_Size))
                 self.display_surface.blit(surf, rec)
+
         self.foreground.draw(self.display_surface)
     def preview(self):
         selected_object = self.mouse_on_object()
@@ -344,9 +333,7 @@ class Editor:
                 type_dict = {key: value['type'] for key,value in EDITOR_DATA.items()}
 
                 # preview of tile/object
-                surf = self.preview_surfs[self.selection_index].copy()
-                #makes it a little transparent
-                surf.set_alpha(50)
+                surf = self.preview_surfs[self.selection_index]
 
                 # tile
                 if type_dict[self.selection_index] == 'tile':

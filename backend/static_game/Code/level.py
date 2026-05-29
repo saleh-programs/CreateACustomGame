@@ -63,7 +63,7 @@ class Level:
         collision_sprites = [sprite for sprite in self.damage_sprites if self.player.hitbox.colliderect(sprite)]
         if collision_sprites:
             #self.hit_sound.play()
-            self.player.damage(self.health_bar)
+            self.player.damage()
     def give_damage(self):
         if self.player.attack_rect:
             for sprite in self.damage_sprites:
@@ -82,11 +82,10 @@ class Level:
     def run(self,dt):
         #update
         self.event_loop()
-        self.display_surface.fill('white')
         self.all_sprites.update(dt)
         self.get_coins()
-        # # self.get_damage()
-        # self.give_damage()
+        self.get_damage()
+        self.give_damage()
 
         self.all_sprites.custom_draw(self.player,self.background)
 
@@ -110,8 +109,6 @@ class CameraGroup(pygame.sprite.Group):
         self.ver_center = height / 2
 
         self.alt_height = height/2 + 20
-
-        self.background = load("custom_graphics/background/0.png").convert_alpha()
 
     def custom_draw(self, player,back):
         # box camera
@@ -142,13 +139,17 @@ class CameraGroup(pygame.sprite.Group):
 
 
 
-        self.display_surface.blit(self.background, (0, 0))
+        self.display_surface.blit(back, (0, 0))
 
         all_sprites = [(sprite.image, sprite.rect.topleft - self.offset, sprite.z) for sprite in self if vector(player.rect.center).distance_to(vector(sprite.rect.center)) < 1800]
 
         all_sprites.sort(key = lambda sprite: sprite[2])
         all_sprites = [(sprite[0],sprite[1]) for sprite in all_sprites]
 
-
+        if player.attack_rect:
+            r = player.attack_rect.copy()
+            r.x -= self.offset.x
+            r.y -= self.offset.y
+            pygame.draw.rect(self.display_surface, "red", r,2)
         for sprite in all_sprites:
             self.display_surface.blit(sprite[0],sprite[1])

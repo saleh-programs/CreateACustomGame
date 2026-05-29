@@ -37,8 +37,10 @@ class  Main:
     def imports(self):
         self.terrain = load('custom_graphics/terrain/0.png').convert_alpha()
         self.coin = load('custom_graphics/coin/0.png').convert_alpha()
+
+
         self.tree = load("custom_graphics/tree/0.png").convert_alpha()
-        self.particle = load("fixed_graphics/particle.png")
+        self.particle = load("fixed_graphics/particle.png").convert_alpha()
         self.enemy = import_folder('custom_graphics/enemy/')
         self.background = load("custom_graphics/background/0.png").convert_alpha()
 
@@ -67,7 +69,7 @@ class  Main:
         self.transition.active = True
     async def run(self):
         while True:
-            dt = self.clock.tick() / 1000
+            dt = self.clock.tick(30) / 1000
 
             if dt > .1:
                 dt = .1
