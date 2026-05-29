@@ -32,67 +32,67 @@ function Creating() {
     { title: "...the main character standing!",
       dimensions: [40,64],
       name: "idle",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...the main character attacking!",
       dimensions: [240, 74],
       name: "attack",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...the main character falling!" ,
       dimensions: [44,64],
       name: "fall",
-      countdown: 10000
+      countdown: 60000
     },
     { title: "...the main character jumping!",
       dimensions: [44,64],
       name: "jump",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...the main character running! (frame 1 of 3)",
       dimensions: [40,64],
       name: "run",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...the main character running! (frame 2 of 3)",
       dimensions: [40,64],
       name: "run",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...the main character running! (frame 3 of 3)",
       dimensions: [40,64],
       name: "run",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...an enemy! (frame 1 of 2)",
       dimensions: [64,64],
       name: "enemy",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...an enemy! (frame 2 of 2)",
       dimensions: [64,64],
       name: "enemy",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...a background!",
       dimensions: [3600,1900],
       name: "background",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...a coin!" ,
       dimensions: [64,64],
       name: "coin",
-      countdown: 10000
+      countdown: 60000
     },
     { title: "...a terrain block!",
       dimensions: [64,64],
       name: "terrain",
-      countdown: 10000
+      countdown: 60000
       },
     { title: "...a obstacle, like a tree or bush!",
       dimensions: [64,64],
       name: "tree",
-      countdown: 10000
+      countdown: 60000
       },
   ]);
   const [currentAsset, setCurrentAsset] = useState(0);
@@ -121,6 +121,8 @@ function Creating() {
     // const redoStack = useRef([]);
     const isLoadingState = useRef(false);
     const [activeTool, setActiveTool] = useState("pencil");
+    const activeToolRef = useRef("pencil");
+
     const [stopwatch, setStopwatch] = useState(allAssets[currentAsset].countdown);
   const storeIntervalRef = useRef(null);
   const displayScale = getDisplayScale(allAssets[currentAsset].dimensions[0], allAssets[currentAsset].dimensions[1]);
@@ -158,8 +160,12 @@ const [gameURL, setGameURL] = useState(null);
     }
   }, [ready])
 
+  useEffect(() => {
+    activeToolRef.current = activeTool;
+  },[activeTool])
 
   useEffect(() => {
+    if (!canvasEl.current) return;
     const canvas = new Canvas(canvasEl.current, {
       width: allAssets[currentAsset].dimensions[0],
       height: allAssets[currentAsset].dimensions[1],
@@ -182,7 +188,7 @@ const [gameURL, setGameURL] = useState(null);
     usePencil();
 
     return () => canvas.dispose();
-  }, [currentAsset]);
+  }, [currentAsset, ready]);
 
 useEffect(() => {
   if (!generatingGame) return;
@@ -233,7 +239,8 @@ function usePencil() {
 
   canvas.isDrawingMode = true;
   canvas.selection = true;
-canvas.skipTargetFind = false;
+  canvas.skipTargetFind = false;
+  setActiveTool("pencil")
 
 
   const brush = new PencilBrush(canvas);
@@ -248,6 +255,7 @@ function useEraser() {
   const canvas = fabricCanvas.current;
   if (!canvas) return;
 
+  setActiveTool("eraser")
   canvas.off("mouse:move");
 
   canvas.isDrawingMode = true;
@@ -279,6 +287,7 @@ function useColorMatcher() {
   const canvas = fabricCanvas.current;
   if (!canvas) return;
 
+  setActiveTool("colormatcher")
   canvas.off("mouse:move");
   canvas.off("mouse:down");
 
@@ -311,6 +320,7 @@ function useColorMatcher() {
 
   canvas.on("mouse:down", pickColor);
 }
+
 function useCircle() {
   const canvas = fabricCanvas.current;
   if (!canvas) return;
@@ -318,10 +328,15 @@ function useCircle() {
   canvas.isDrawingMode = false;
   canvas.selection = true;
 
+  const diameter = Math.min(canvas.width, canvas.height) * 0.6;
+  const radius = diameter / 2;
+
   const circle = new Circle({
-    left: 150,
-    top: 150,
-    radius: 50,
+    left: canvas.width / 2,
+    top: canvas.height / 2,
+    radius,
+    originX: "center",
+    originY: "center",
     fill: "transparent",
     stroke: color,
     strokeWidth: strokeSize,
@@ -330,6 +345,18 @@ function useCircle() {
   canvas.add(circle);
   canvas.setActiveObject(circle);
   canvas.renderAll();
+
+  const reassignTool = () => {
+    const options = {
+      pencil: usePencil,
+      eraser: useEraser,
+      colormatcher: useColorMatcher
+    }
+    options[activeToolRef.current]();
+    canvas.off("selection:cleared", reassignTool)
+  }
+  canvas.off("selection:cleared", reassignTool);
+  canvas.on("selection:cleared", reassignTool)
 }
 function useText() {
   const canvas = fabricCanvas.current;
@@ -338,17 +365,35 @@ function useText() {
   canvas.isDrawingMode = false;
   canvas.selection = true;
 
+  const fontSize = Math.max(10, Math.min(canvas.width, canvas.height) * 0.25);
+  const width = canvas.width * 0.8;
+
   const text = new Textbox("Text", {
-    left: 100,
-    top: 100,
-    width: 200,
-    fontSize: 32,
+    left: canvas.width / 2,
+    top: canvas.height / 2,
+    width,
+    fontSize,
     fill: color,
+    originX: "center",
+    originY: "center",
+    textAlign: "center",
   });
 
   canvas.add(text);
   canvas.setActiveObject(text);
   canvas.renderAll();
+
+  const reassignTool = () => {
+    const options = {
+      pencil: usePencil,
+      eraser: useEraser,
+      colormatcher: useColorMatcher
+    }
+    options[activeToolRef.current]();
+    canvas.off("selection:cleared", reassignTool)
+  }
+  canvas.off("selection:cleared", reassignTool);
+  canvas.on("selection:cleared", reassignTool)
 }
 function useLine() {
   const canvas = fabricCanvas.current;
@@ -357,14 +402,37 @@ function useLine() {
   canvas.isDrawingMode = false;
   canvas.selection = true;
 
-  const line = new Line([100, 100, 250, 100], {
-    stroke: color,
-    strokeWidth: strokeSize,
-  });
+  const length = canvas.width * 0.7;
+  const y = canvas.height / 2;
+
+  const line = new Line(
+    [
+      canvas.width / 2 - length / 2,
+      y,
+      canvas.width / 2 + length / 2,
+      y,
+    ],
+    {
+      stroke: color,
+      strokeWidth: Math.min(strokeSize, canvas.height * 0.2),
+    }
+  );
 
   canvas.add(line);
   canvas.setActiveObject(line);
   canvas.renderAll();
+
+  const reassignTool = () => {
+    const options = {
+      pencil: usePencil,
+      eraser: useEraser,
+      colormatcher: useColorMatcher
+    }
+    options[activeToolRef.current]();
+    canvas.off("selection:cleared", reassignTool)
+  }
+  canvas.off("selection:cleared", reassignTool);
+  canvas.on("selection:cleared", reassignTool)
 }
 function useRectangle() {
   const canvas = fabricCanvas.current;
@@ -373,19 +441,36 @@ function useRectangle() {
   canvas.isDrawingMode = false;
   canvas.selection = true;
 
+  const width = canvas.width * 0.6;
+  const height = canvas.height * 0.6;
+
   const rect = new Rect({
-    left: 150,
-    top: 150,
-    width: 120,
-    height: 80,
+    left: canvas.width / 2,
+    top: canvas.height / 2,
+    width,
+    height,
+    originX: "center",
+    originY: "center",
     fill: "transparent",
     stroke: color,
-    strokeWidth: strokeSize,
+    strokeWidth: Math.min(strokeSize, Math.min(canvas.width, canvas.height) * 0.15),
   });
 
   canvas.add(rect);
   canvas.setActiveObject(rect);
   canvas.renderAll();
+
+  const reassignTool = () => {
+    const options = {
+      pencil: usePencil,
+      eraser: useEraser,
+      colormatcher: useColorMatcher
+    }
+    options[activeToolRef.current]();
+    canvas.off("selection:cleared", reassignTool)
+  }
+  canvas.off("selection:cleared", reassignTool);
+  canvas.on("selection:cleared", reassignTool)
 }
 
 async function getCanvasSnapshot(){
@@ -443,10 +528,8 @@ async function generateMyGame(){
     setGeneratingGame(false);
     return null;
   }
-  console.log(data);
   setGeneratingGame(false);
   setGameURL(data.url);
-  console.log(data.url)
 }
 
 // function saveState() {
@@ -539,7 +622,6 @@ async function generateMyGame(){
       flexDirection: "column", gap: "10px"
     }}>
 
-        {}
         {ready && <section style={{
           fontSize: "1.3em", 
           backgroundColor: "rgb(39, 39, 39)",
@@ -752,17 +834,16 @@ async function generateMyGame(){
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
         gap: "8px",
-        alignItems: "center"
+        alignItems: "center",
       }}
     >
       <p style={{ gridColumn: "1 / -1", margin: "auto", color: "white", fontWeight: 700 }}>
-        Main
+        Tools
       </p>
 
-      <button style={toolBtn} onClick={usePencil}><img src={pencilIcon} alt="" /></button>
-      <button style={toolBtn} onClick={useEraser}><img src={eraserIcon} alt="" /></button>
-      <button style={toolBtn} onClick={useColorMatcher}><img src={colorMatcherIcon} alt="" /></button>
-      <button style={toolBtn} onClick={useText}><img src={textIcon} alt="" /></button>
+      <button style={{...toolBtn, opacity: activeTool === "pencil" ? ".2" : "1"}} onClick={usePencil}><img src={pencilIcon} alt="" /></button>
+      <button style={{...toolBtn, opacity: activeTool === "eraser" ? ".2" : "1"}} onClick={useEraser}><img src={eraserIcon} alt="" /></button>
+      <button style={{...toolBtn, opacity: activeTool === "colormatcher" ? ".2" : "1", gridColumn: "1 / -1", justifySelf: "center"}} onClick={useColorMatcher}><img src={colorMatcherIcon} alt="" /></button>
     </section>
 
     <section
@@ -773,12 +854,14 @@ async function generateMyGame(){
       }}
     >
       <p style={{ gridColumn: "1 / -1", margin: "auto", color: "white", fontWeight: 700 }}>
-        Shapes
+        Objects
       </p>
 
-      <button style={toolBtn} onClick={useRectangle}><img src={rectangleIcon} alt="" /></button>
+      <button style={toolBtn}  onClick={useRectangle}><img src={rectangleIcon} alt="" /></button>
       <button style={toolBtn} onClick={useCircle}><img src={circleIcon} alt="" /></button>
-      <button style={{...toolBtn, gridColumn: "1 / -1", justifySelf: "center"}} onClick={useLine}><img src={lineIcon}/></button>
+      <button style={{...toolBtn, opacity: activeTool === "text" ? ".2" : "1"}} onClick={useText}><img src={textIcon} alt="" /></button>
+      <button style={{...toolBtn}} onClick={useLine}><img src={lineIcon}/></button>
+
     </section>
   </aside>
           </section>
