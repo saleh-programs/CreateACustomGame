@@ -392,9 +392,14 @@ async function getCanvasSnapshot(){
   const canvas = fabricCanvas.current;
   if (!canvas) return null;
 
-  return await new Promise((resolve) => {
-    canvas.getElement().toBlob(resolve, "image/png");
-  })
+  const dataURL = canvas.toDataURL({
+    format: "png",
+    multiplier: 1,
+    enableRetinaScaling: false
+  });
+
+  const img = await fetch(dataURL);
+  return await img.blob();
 }
 
 function getDisplayScale(assetW, assetH) {
