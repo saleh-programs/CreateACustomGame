@@ -428,7 +428,7 @@ async function generateMyGame(){
     .replace(/[^a-z0-9-]/g, "");
 
   const routeName = `${base || "student"}-${Date.now()}`;
-  const response = await fetch(`http://localhost:5001/generate/${routeName}`, {
+  const response = await fetch(`http://18.117.57.5:5002/generate/${routeName}`, {
     method: "POST",
     body: fd
   });

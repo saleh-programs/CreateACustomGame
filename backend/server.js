@@ -7,7 +7,7 @@ import multer from "multer";
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-const PORT = 5001;
+const PORT = 5002;
 
 const app = express();
 app.use(cors());
@@ -46,11 +46,12 @@ app.post("/generate/:routeName", upload.fields([
 
     execFile("static_game/.venv/bin/pygbag", ["--build", `${newRoute}/Code`], 
         (err, stdout, stderr) => {
+		console.log("error: ", err)
             if (err) return res.status(500).json({success: false, message: "Error during build"});
-            return res.json({success: true, url: `http://localhost:5001/games/${routeName}/Code/build/web/index.html`});
+            return res.json({success: true, url: `http://18.117.57.5:5002/games/${routeName}/Code/build/web/index.html`});
         });
 })
 
-app.listen(PORT || 5001, () => {
+app.listen(PORT || 5002, () => {
   console.log(`Server running on port ${PORT}`);
 });
