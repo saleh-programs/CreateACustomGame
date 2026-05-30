@@ -12,6 +12,8 @@ import timerIcon from "../assets/stopwatch.png"
 
 import bg from "../assets/background.jpg"
 
+// const backend = "http://localhost:5002"
+const backend = "http://18.117.57.5:5002"
 
 const toolBtn = {
   width: 42,
@@ -32,67 +34,67 @@ function Creating() {
     { title: "...the main character standing!",
       dimensions: [40,64],
       name: "idle",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...the main character attacking!",
       dimensions: [240, 74],
       name: "attack",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...the main character falling!" ,
       dimensions: [44,64],
       name: "fall",
-      countdown: 60000
+      countdown: 120000
     },
     { title: "...the main character jumping!",
       dimensions: [44,64],
       name: "jump",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...the main character running! (frame 1 of 3)",
       dimensions: [40,64],
       name: "run",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...the main character running! (frame 2 of 3)",
       dimensions: [40,64],
       name: "run",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...the main character running! (frame 3 of 3)",
       dimensions: [40,64],
       name: "run",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...an enemy! (frame 1 of 2)",
       dimensions: [64,64],
       name: "enemy",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...an enemy! (frame 2 of 2)",
       dimensions: [64,64],
       name: "enemy",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...a background!",
       dimensions: [1800,950],
       name: "background",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...a coin!" ,
       dimensions: [64,64],
       name: "coin",
-      countdown: 60000
+      countdown: 120000
     },
     { title: "...a terrain block!",
       dimensions: [64,64],
       name: "terrain",
-      countdown: 60000
+      countdown: 120000
       },
     { title: "...a obstacle, like a tree or bush!",
       dimensions: [64,64],
       name: "tree",
-      countdown: 60000
+      countdown: 120000
       },
   ]);
   const [currentAsset, setCurrentAsset] = useState(0);
@@ -132,6 +134,7 @@ const [loader,setLoader] = useState(".");
 const [gaveName, setGaveName] = useState(false);
 const [studentName, setStudentName] = useState("");
 const [gameURL, setGameURL] = useState(null);
+const [gameFailed, setGameFailed] = useState(false);
  
   useEffect(() => {
     if (!ready) return;
@@ -320,6 +323,21 @@ function useColorMatcher() {
 
   canvas.on("mouse:down", pickColor);
 }
+function styleControls(obj){
+  obj.set({
+    cornerSize: 3,
+    touchCornerSize: 8,
+    borderScaleFactor: 0.5,
+    transparentCorners: false,
+    padding: 0,
+  });
+
+  if (obj.controls?.mtr) {
+    obj.controls.mtr.offsetY = -6; // shorter rotation line
+    obj.controls.mtr.sizeX = 5;
+    obj.controls.mtr.sizeY = 5;
+  }
+}
 
 function useCircle() {
   const canvas = fabricCanvas.current;
@@ -341,6 +359,8 @@ function useCircle() {
     stroke: color,
     strokeWidth: strokeSize,
   });
+
+  styleControls(circle);
 
   canvas.add(circle);
   canvas.setActiveObject(circle);
@@ -378,6 +398,8 @@ function useText() {
     originY: "center",
     textAlign: "center",
   });
+  styleControls(text);
+
 
   canvas.add(text);
   canvas.setActiveObject(text);
@@ -417,6 +439,7 @@ function useLine() {
       strokeWidth: Math.min(strokeSize, canvas.height * 0.2),
     }
   );
+  styleControls(line)
 
   canvas.add(line);
   canvas.setActiveObject(line);
@@ -455,6 +478,7 @@ function useRectangle() {
     stroke: color,
     strokeWidth: Math.min(strokeSize, Math.min(canvas.width, canvas.height) * 0.15),
   });
+  styleControls(rect);
 
   canvas.add(rect);
   canvas.setActiveObject(rect);
@@ -502,34 +526,39 @@ function getDisplayScale(assetW, assetH) {
 }
 
 async function generateMyGame(){
-  console.log("We are going to generate now!")
-  setGeneratingGame(true);
-  const fd = new FormData();
-  for (const [key, val] of Object.entries(storedAssets.current)){
-    let i = 0;
-    for (const b of val){
-      fd.append(key, b, `${i}.png`)
-      i += 1;
+  try{
+    setGeneratingGame(true);
+    const fd = new FormData();
+    for (const [key, val] of Object.entries(storedAssets.current)){
+      let i = 0;
+      for (const b of val){
+        fd.append(key, b, `${i}.png`)
+        i += 1;
+      }
     }
-  }
-  const base = studentName
-    .toLowerCase()
-    .replace(/\s+/g, "")
-    .replace(/[^a-z0-9-]/g, "");
+    const base = studentName
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/[^a-z0-9-]/g, "");
 
-  const routeName = `${base || "student"}-${Date.now()}`;
-  const response = await fetch(`http://18.117.57.5:5002/generate/${routeName}`, {
-    method: "POST",
-    body: fd
-  });
-  const data = await response.json();
-  if (!data || !data.success){
-    console.log(data.message || "req failed");
+    const routeName = `${base || "student"}-${Date.now()}`;
+    const response = await fetch(`${backend}/generate/${routeName}`, {
+      method: "POST",
+      body: fd
+    });
+    const data = await response.json();
+    if (!data || !data.success){
+      console.log(data.message || "req failed");
+      setGeneratingGame(false);
+      setGameFailed(true);
+
+      return null;
+    }
     setGeneratingGame(false);
-    return null;
+    setGameURL(data.url);
+  }catch(e){
+    setGameFailed(true);
   }
-  setGeneratingGame(false);
-  setGameURL(data.url);
 }
 
 // function saveState() {
@@ -578,6 +607,24 @@ async function generateMyGame(){
 //   });
 // }
 
+
+if (gameFailed){
+    return (<div style={{ height: "100%", padding: "20px", backgroundColor: "rgba(109, 31, 0, 0.36)", display: "flex", 
+      flexDirection: "column", gap: "10px", justifyContent: "center", alignItems: "center"
+    }}>
+        <section style={{
+          backgroundColor: "white",
+          borderRadius: "5px",
+          padding: "20px 10px",
+          fontSize: "2rem",
+          minHeight: "170px",
+          textAlign: "center"
+        }}>
+          <div style={{textAlign: "center", fontSize: ".8em", opacity: ".5", width: "100%"}}>{studentName},</div>
+          Your game failed to generate!<br/>
+        </section>
+    </div>)
+}
 
   if (gameURL){
     return (<div style={{ height: "100%", padding: "20px", backgroundColor: "rgba(109, 31, 0, 0.36)", display: "flex", 
@@ -778,12 +825,12 @@ async function generateMyGame(){
     }}
   >
     {[
-      "#000000", "#ffffff", "#808080", "#c0c0c0",
-      "#ff0000", "#ff7f00", "#ffff00", "#00ff00",
-      "#00ffff", "#0000ff", "#8b00ff", "#ff00ff",
-      "#964b00", "#ffc0cb", "#800000", "#008080",
-      "#2f4f4f", "#ffd700", "#90ee90", "#add8e6",
-    ].map((c) => (
+  "#ff0000", "#00ff00", "#0000ff", "#ffff00",
+  "#00ffff", "#ff00ff", "#ffa500", "#800080",
+  "#ffc0cb", "#a52a2a", "#000000", "#ffffff",
+  "#808080", "#c0c0c0", "#800000", "#008000",
+  "#000080", "#008080", "#ffd700", "#f5f5dc"
+].map((c) => (
       <button
         key={c}
         onClick={() => {

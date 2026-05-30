@@ -230,7 +230,8 @@ class Editor:
             self.selection_index = self.menu.click(mouse_pos(),mouse_buttons())
 
     def canvas_add(self):
-
+        if not mouse_buttons()[0]:
+            self.last_selected = None
         if mouse_buttons()[0] and not self.menu.rect.collidepoint(mouse_pos()) and not self.object_drag_active:
             current_cell = self.get_current_cell()
             if EDITOR_DATA[self.selection_index]['type'] == 'tile':
@@ -390,10 +391,10 @@ class CanvasTile:
     def add_id(self,tile_id,offset = vector()):
         options = {key: value['style'] for key, value in EDITOR_DATA.items()}
         match options[tile_id]:
-            case 'terrain': self.has_terrain = True
-            case 'water': self.has_water = True
-            case 'coin': self.coin = tile_id
-            case 'enemy': self.enemy = tile_id
+            case 'terrain': self.has_terrain = True if not self.has_terrain else False
+            case 'water': self.has_water = True if not self.has_water else False
+            case 'coin': self.coin = tile_id if not self.coin else None
+            case 'enemy': self.enemy = tile_id if not self.enemy else None
             case _: # Objects
                 if (tile_id,offset) not in self.objects:
                     self.objects.append((tile_id,offset))

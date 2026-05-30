@@ -26,6 +26,15 @@ class Level:
         self.particle = asset_dict['particle']
         self.background = asset_dict['background']
 
+        self.falseKeys = {
+            "K_RIGHT": False,
+            "K_LEFT": False,
+            "K_UP": False,
+            "K_DOWN": False,
+            "K_SPACE": False,
+            "K_RETURN": False
+        }
+
 
     def build_level(self,grid,asset_dict):#,jump_sound):
         for layer_name, layer in grid.items():
@@ -87,6 +96,7 @@ class Level:
         self.get_damage()
         self.give_damage()
 
+        self.display_surface.fill("white")
         self.all_sprites.custom_draw(self.player,self.background)
 
 class CameraGroup(pygame.sprite.Group):

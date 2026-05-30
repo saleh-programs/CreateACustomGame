@@ -9,6 +9,9 @@ const upload = multer({ storage });
 
 const PORT = 5002;
 
+// const backend = "http://localhost:5002"
+const backend = "http://18.117.57.5:5002"
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -48,7 +51,7 @@ app.post("/generate/:routeName", upload.fields([
         (err, stdout, stderr) => {
 		console.log("error: ", err)
             if (err) return res.status(500).json({success: false, message: "Error during build"});
-            return res.json({success: true, url: `http://18.117.57.5:5002/games/${routeName}/Code/build/web/index.html`});
+            return res.json({success: true, url: `${backend}/games/${routeName}/Code/build/web/index.html`});
         });
 })
 
