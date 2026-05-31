@@ -50,6 +50,7 @@ class Menu:
 
         bottomleft = (width - size - margin, height - (size + size / 2) - margin)
         self.rect = pygame.Rect(bottomleft, (size, size + size/2))
+
     def click(self,mouse_pos,mouse_button):
         for sprite in self.buttons:
             if sprite.rect.collidepoint(mouse_pos):
@@ -104,4 +105,3 @@ class Button(pygame.sprite.Sprite):
             rect = surf.get_rect(midbottom=(self.rect.width / 2, self.rect.height))
 
         self.image.blit(surf,rect)
-

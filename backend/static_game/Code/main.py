@@ -50,6 +50,7 @@ class  Main:
 
     def toggle(self):
         self.editor_active = not self.editor_active
+        self.editor.creating = False
 
     def switch(self,grid = None):
         asset_dict = {
@@ -64,7 +65,6 @@ class  Main:
 
         if grid and not self.transition.active:
             self.level = Level(grid,self.switch,asset_dict)
-
 
         self.transition.active = True
     async def run(self):

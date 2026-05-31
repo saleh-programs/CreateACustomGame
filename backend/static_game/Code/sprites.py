@@ -156,22 +156,22 @@ class Player(Generic):
         self.direction.y += self.gravity * dt
     def input(self):
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_RIGHT]:
+        if keys[pygame.K_RIGHT] or self.false_keys["K_RIGHT"]:
             self.direction.x = 1
             self.orientation = 'right'
             self.way = 0
-        elif keys[pygame.K_LEFT]:
+        elif keys[pygame.K_LEFT] or self.false_keys["K_LEFT"]:
             self.direction.x = -1
             self.orientation = 'left'
             self.way = 140
         else:
             self.direction.x = 0
         # jump
-        if keys[pygame.K_SPACE] and not self.jump_timer.active and self.on_floor:
+        if (keys[pygame.K_SPACE] or self.false_keys["K_SPACE"]) and not self.jump_timer.active and self.on_floor:
             self.direction.y = -2
             self.jump_timer.activate()
         # attack
-        if keys[pygame.K_RETURN]:
+        if (keys[pygame.K_RETURN] or self.false_keys["K_RETURN"]):
             self.frame_index = 0
             self.attack = True
 
@@ -217,7 +217,7 @@ class Player(Generic):
             self.frame_index += JUMP_ANIMATION * dt
         else:
             self.frame_index += ANIMATION_SPEED * dt
-        if self.frame_index >= len(current_animation)-0.5:
+        if self.frame_index >= len(current_animation):
             self.frame_index = 0
             self.attack = False
             self.attack_rect = None

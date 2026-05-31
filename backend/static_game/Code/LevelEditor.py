@@ -9,7 +9,7 @@ from random import choice, randint
 
 from support import *
 from Settings import *
-
+from controls import ControlButton
 
 
 class Editor:
@@ -21,6 +21,17 @@ class Editor:
 
         #imports
         self.imports()
+
+        font = pygame.font.Font("fixed_graphics/PressStart2P-Regular.ttf", 15)
+        self.start_surf = font.render("Start level", True, "white").convert_alpha()
+        self.trash_surf = load("fixed_graphics/trash.png").convert_alpha()
+        size = 90
+        margin = 6
+        start_rect = pygame.Rect((margin, margin), (size * 3, size * .75 )).move(0,0)
+        self.start = ControlButton(start_rect, (), self.start_surf, None)
+
+        trash_rect =  pygame.Rect((width - margin - size, margin), (size,size)).move(0,0)
+        self.trash = ControlButton(trash_rect, (), self.trash_surf, None)
 
         #navigation
         self.origin = vector()
@@ -45,6 +56,8 @@ class Editor:
         self.object_drag_active = False
         self.object_timer = Timer(300)
 
+        self.creating = False
+
         #Player
         CanvasObject(
             pos = (200,height //2),
@@ -53,6 +66,7 @@ class Editor:
             origin = self.origin,
             group = [self.canvas_objects,self.foreground]
         )
+        self.isplayer = False
 
     # support
     def get_current_cell(self,obj = None):
@@ -174,9 +188,13 @@ class Editor:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN and not self.creating:
+                self.creating = True
                 self.switch(self.create_grid())
                 #self.editor_music.stop()
+            if event.type == pygame.MOUSEBUTTONDOWN and self.start.rect.collidepoint(pygame.mouse.get_pos()) and not self.creating:
+                self.creating = True
+                self.switch(self.create_grid())
             self.pan_input(event)
             self.selection_hotkeys(event)
             self.menu_click(event)
@@ -220,10 +238,14 @@ class Editor:
                 if sprite.rect.collidepoint(event.pos):
                     sprite.start_drag()
                     self.object_drag_active = True
+                    self.isplayer = sprite.tile_id == 0
         if event.type == pygame.MOUSEBUTTONUP and self.object_drag_active:
             for sprite in self.canvas_objects:
                 if sprite.selected:
                     sprite.end_drag(self.origin)
+                    if sprite.tile_id != 0 and self.trash.rect.collidepoint(mouse_pos()):
+                        sprite.kill()
+
                 self.object_drag_active = False
     def menu_click(self,event):
         if event.type == pygame.MOUSEBUTTONDOWN and self.menu.rect.collidepoint(mouse_pos()):
@@ -232,7 +254,7 @@ class Editor:
     def canvas_add(self):
         if not mouse_buttons()[0]:
             self.last_selected = None
-        if mouse_buttons()[0] and not self.menu.rect.collidepoint(mouse_pos()) and not self.object_drag_active:
+        if mouse_buttons()[0] and not self.menu.rect.collidepoint(mouse_pos()) and not self.start.rect.collidepoint(mouse_pos()) and not self.object_drag_active:
             current_cell = self.get_current_cell()
             if EDITOR_DATA[self.selection_index]['type'] == 'tile':
                 if current_cell != self.last_selected:
@@ -355,11 +377,17 @@ class Editor:
         self.animation_updates(dt)
         self.canvas_objects.update(dt)
         self.object_timer.update()
+        self.start.update()
+        if self.object_drag_active and not self.isplayer:
+            self.trash.update()
 
         # drawing
         self.display_surface.fill('white')
         self.draw_level()
         self.draw_grid()
+        self.display_surface.blit(self.start.image, self.start.rect)
+        if self.object_drag_active and not self.isplayer:
+            self.display_surface.blit(self.trash.image, self.trash.rect)
 
         # pygame.draw.rect(self.display_surface,"red", self.menu.rect, 2)
         self.preview()
@@ -436,6 +464,7 @@ class CanvasObject(pygame.sprite.Sprite):
     def drag(self):
         if self.selected:
             self.rect.topleft = mouse_pos() - self.mouse_offset
+
     def end_drag(self,origin):
         self.selected = False
         self.distance_to_origin = vector(self.rect.topleft) - origin
